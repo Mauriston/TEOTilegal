@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <!-- Bibliotecas para geração de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Ícones do Google Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    
+    <style>
+        /* Reset e Configurações Globais */
+        :root {
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            --cyan-500: #06b6d4;
+            --cyan-600: #0891b2;
+            --green-500: #22c55e;
+            --green-600: #16a34a;
+            --red-500: #ef4444;
+            --white: #ffffff;
+            --gold: #FFD700;
+
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            color-scheme: dark;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Corpo da Página */
+        body {
+            background-color: var(--slate-900);
+            color: var(--slate-200);
+            font-size: 16px;
+            line-height: 1.5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        /* Container Principal */
+        #app-container {
+            width: 100%;
+            max-width: 500px;
+            min-height: 95vh;
+            background-color: var(--slate-800);
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Esconde todas as telas por padrão */
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-grow: 1;
+            flex-direction: column;
+        }
+        
+        #app-container > .screen {
+             padding: 1.5rem;
+        }
+        #review-screen {
+             padding: 0;
+        }
+
+
+        /* Mostra a tela ativa */
+        .screen.active {
+            display: flex;
+        }
+
+        /* Componentes Comuns */
+        h1, h2, h3 {
+            color: var(--white);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        h1 { font-size: 1.75rem; font-weight: 700; margin-top: 2rem; }
+        h2 { font-size: 1.5rem; font-weight: 600; }
+        h3 { font-size: 1.25rem; font-weight: 600; }
+
+        p {
+            margin-bottom: 1rem;
+            color: var(--slate-300);
+        }
+
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            text-align: center;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+        
+        .btn-primary {
+            background-color: var(--cyan-500);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--cyan-600);
+        }
+
+        .btn-secondary {
+            background-color: var(--slate-600);
+            color: var(--white);
+        }
+        .btn-secondary:hover {
+            background-color: var(--slate-500);
+        }
+
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--slate-300);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--slate-700);
+            border: 1px solid var(--slate-600);
+            border-radius: 0.5rem;
+            color: var(--slate-50);
+            font-size: 1rem;
+        }
+        .form-control[readonly] {
+            background-color: var(--slate-800);
+            cursor: not-allowed;
+        }
+
+        /* --- Estilos Específicos das Telas --- */
+
+        /* Tela de Carregamento */
+        #loading-screen {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 5px solid var(--slate-500);
+            border-bottom-color: var(--cyan-500);
+            border-radius: 50%;
+            display: inline-block;
+            animation: rotation 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Tela de Boas-vindas */
+        #welcome-screen form {
+            margin-top: 2rem;
+        }
+        .subtitle {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.1rem;
+            color: var(--slate-300);
+            margin-top: -0.5rem;
+            margin-bottom: 2rem;
+            font-weight: 500;
+        }
+        .trophy-icon {
+            color: var(--gold);
+            font-size: 1.5rem; 
+        }
+
+        /* Tela de Aviso */
+        #warning-screen ul {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 2rem;
+        }
+        #warning-screen li {
+            background-color: var(--slate-700);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        #warning-screen li strong {
+            color: var(--gold);
+        }
+        #warning-screen li svg {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+        .footer-text {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--slate-500);
+            margin-top: 1.5rem;
+        }
+
+        /* Tela de Quiz */
+        .progress-bar-container {
+            width: 100%;
+            height: 10px;
+            background-color: var(--slate-700);
+            border-radius: 5px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: var(--cyan-500);
+            border-radius: 5px;
+            transition: width 0.3s ease-in-out;
+        }
+        .question-header {
+            margin-bottom: 1rem;
+            font-weight: 500;
+            color: var(--slate-400);
+        }
+        .question-header.banco-proprio {
+            color: var(--red-500);
+            font-weight: 700;
+        }
+        .question-image {
+            width: 100%;
+            max-height: 250px;
+            object-fit: contain;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+        .options-container button {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--slate-600);
+            border-radius: 0.5rem;
+            background-color: var(--slate-700);
+            color: var(--slate-200);
+            cursor: pointer;
+            text-align: left;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        .options-container button:not(:disabled):hover {
+            border-color: var(--cyan-500);
+            background-color: var(--slate-600);
+        }
+        .options-container button.correct {
+            background-color: var(--green-500);
+            border-color: var(--green-500);
+            color: var(--white);
+        }
+        .options-container button.incorrect {
+            background-color: var(--red-500);
+            border-color: var(--red-500);
+            color: var(--white);
+        }
+        .options-container button:disabled {
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+        .option-letter {
+            font-weight: 700;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid var(--slate-500);
+            border-radius: 50%;
+        }
+        .feedback-section {
+            margin-top: 1.5rem;
+        }
+        .accordion-header {
+            background-color: var(--slate-700);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .accordion-header svg {
+            transition: transform 0.3s;
+        }
+        .accordion-content {
+            display: none;
+            padding: 1rem;
+            background-color: var(--slate-900);
+            border-radius: 0.5rem;
+        }
+        .accordion.active .accordion-header svg {
+            transform: rotate(180deg);
+        }
+        .accordion.active .accordion-content {
+            display: block;
+        }
+        #quiz-footer {
+            margin-top: auto;
+            padding-top: 1rem;
+        }
+
+        /* Modal da Imagem */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 90%;
+        }
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        /* Tela de Resultados */
+        #results-content {
+            overflow-y: auto;
+            height: 100%;
+            padding-right: 0.5rem;
+            margin-right: -0.5rem;
+        }
+        .results-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        #results-message {
+            font-style: italic;
+            color: var(--slate-400);
+            margin-top: -0.5rem;
+        }
+        .final-score {
+            font-size: 3rem;
+            font-weight: 700;
+        }
+        .score-text {
+            font-size: 1.25rem;
+            color: var(--slate-300);
+        }
+        .chart-container {
+            margin-bottom: 1.5rem;
+        }
+        .analysis-card {
+             background-color: var(--slate-700);
+             padding: 1.5rem;
+             border-radius: 1rem;
+        }
+        .analysis-card h3 {
+              margin-bottom: 1.5rem;
+        }
+        .donut-chart-wrapper {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 1rem;
+        }
+        .donut-chart {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+        }
+        .donut-chart-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 75%;
+            height: 75%;
+            background: var(--slate-800);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: var(--white);
+        }
+        .donut-chart-center span {
+            display: block;
+            font-size: 0.9rem;
+            line-height: 1.2;
+        }
+        .donut-chart-center .total {
+            font-size: 2.25rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        .chart-legend {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 1rem;
+        }
+        .legend-label {
+             display: flex;
+             align-items: center;
+             gap: 0.75rem;
+             font-weight: 600;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        .legend-details {
+            color: var(--slate-300);
+            text-align: right;
+            font-size: 0.9rem;
+        }
+        .legend-details span {
+            display: block;
+            line-height: 1.2;
+        }
+        .progress-bar-analysis {
+            margin-bottom: 1rem;
+        }
+        .progress-bar-analysis-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+        .progress-bar-analysis .progress-bar-container {
+             height: 14px;
+             margin-bottom: 0;
+        }
+        .progress-bar-analysis .progress-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--slate-900);
+            font-weight: 600;
+        }
+
+        #results-footer {
+            margin-top: auto;
+            padding-top: 1rem;
+        }
+        
+        /* Tela de Revisão */
+        .review-sticky-header, #review-footer {
+            padding: 1rem 1.5rem;
+            background-color: var(--slate-800);
+            display: flex;
+            align-items: center;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+        .review-sticky-header {
+             justify-content: space-between;
+             border-bottom: 1px solid var(--slate-700);
+        }
+        #review-footer {
+             justify-content: flex-end;
+             border-top: 1px solid var(--slate-700);
+        }
+        .review-sticky-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+        .header-buttons {
+            display: flex;
+            gap: 0.75rem;
+        }
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--white);
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        .review-back-btn {
+            background-color: var(--slate-600);
+        }
+        .review-back-btn:hover {
+            background-color: var(--slate-500);
+        }
+        .download-pdf-btn {
+            background-color: var(--green-500);
+        }
+         .download-pdf-btn:hover {
+            background-color: var(--green-600);
+        }
+        #review-content {
+            overflow-y: auto;
+            flex-grow: 1;
+            padding: 1.5rem;
+        }
+        .review-info-card {
+            background-color: var(--slate-700);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+        .review-info-card p {
+            margin: 0;
+            padding: 0.25rem 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .review-info-card strong {
+            color: var(--slate-200);
+            margin-right: 1rem;
+        }
+         .review-info-card span {
+            text-align: right;
+         }
+        .review-info-card .score {
+            font-weight: 700;
+        }
+
+        .review-question-card {
+            background-color: var(--slate-900);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div id="app-container">
+
+        <!-- 1. TELA DE CARREGAMENTO -->
+        <div id="loading-screen" class="screen active">
+            <div class="spinner"></div>
+            <h2>Carregando Questões...</h2>
+            <p id="error-message" style="color: var(--red-500);"></p>
+        </div>
+
+        <!-- 2. TELA DE BOAS-VINDAS -->
+        <div id="welcome-screen" class="screen">
+            <h1>Treinamento ILEGAL TEOT 2026</h1>
+            <p class="subtitle">O ano da vitória <span class="material-symbols-outlined trophy-icon">trophy</span></p>
+            <form id="welcome-form">
+                <div class="form-group">
+                    <label for="name">Nome</label>
+                    <select id="name" class="form-control" required>
+                        <option value="" disabled selected>Selecione seu nome</option>
+                    </select>
+                </div>
+                <div id="email-group" class="form-group" style="display: none;">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" class="form-control" readonly required>
+                </div>
+                <button type="submit" class="btn btn-primary">Iniciar Simulado</button>
+            </form>
+        </div>
+        
+        <!-- 3. TELA DE AVISO -->
+        <div id="warning-screen" class="screen">
+            <h2>Avisos Importantes</h2>
+            <ul>
+                <li>
+                    <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                    <span>Você só tem <strong>uma chance para responder cada questão</strong>. Uma vez escolhida a alternativa, não será possível trocar a resposta.</span>
+                </li>
+                <li>
+                    <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                    <span>Em semelhança ao TEOT, também <strong>não será possível voltar para questões já respondidas.</strong></span>
+                </li>
+                 <li>
+                    <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 01.375-.375h6a.375.375 0 010 .75h-6a.375.375 0 01-.375-.375zM12 15a.375.375 0 01.375-.375h.008a.375.375 0 010 .75h-.008A.375.375 0 0112 15z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" /></svg>
+                    <span>Todas as questões estão comentadas por mim ou pela Marcella.</span>
+                 </li>
+                 <li>
+                    <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" /></svg>
+                    <span>Clique nas imagens para expandi-las caso precisem melhorar a visualização.</span>
+                 </li>
+            </ul>
+             <div style="margin-top: auto;">
+                <button id="start-quiz-btn" class="btn btn-primary">Entendi, começar!</button>
+                <p class="footer-text">FormWeb developed by Mauriston Martins on Gemini Pro 2.5</p>
+             </div>
+        </div>
+
+
+        <!-- 4. TELA DO QUIZ -->
+        <div id="quiz-screen" class="screen">
+            <div id="quiz-header">
+                <div class="progress-bar-container">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+                <p id="progress-text" style="text-align: right; font-size: 0.9rem; color: var(--slate-400);"></p>
+            </div>
+            <div id="question-card">
+                <!-- Conteúdo da questão será inserido aqui pelo JS -->
+            </div>
+            <div id="quiz-footer">
+                <button id="next-question-btn" class="btn btn-primary" style="display: none;">Próxima Questão</button>
+            </div>
+        </div>
+        
+        <!-- MODAL PARA IMAGEM -->
+        <div id="image-modal" class="modal">
+            <span class="modal-close">&times;</span>
+            <img class="modal-content" id="modal-img">
+        </div>
+
+        <!-- 5. TELA DE RESULTADOS -->
+        <div id="results-screen" class="screen">
+             <div id="results-content">
+                <div class="results-header">
+                    <h2>Simulado Finalizado!</h2>
+                    <p id="results-message"></p>
+                    <p class="score-text">Sua nota final foi:</p>
+                    <p id="final-score" class="final-score">0.0</p>
+                </div>
+
+                <div class="chart-container analysis-card">
+                    <h3>Distribuição por Prova</h3>
+                    <div class="donut-chart-wrapper">
+                        <div id="donut-chart" class="donut-chart"></div>
+                        <div class="donut-chart-center">
+                            <span id="donut-total" class="total">0</span>
+                            <span>questões</span>
+                        </div>
+                    </div>
+                    <div id="donut-legend" class="chart-legend"></div>
+                </div>
+
+                <div class="chart-container analysis-card">
+                    <h3>Análise por Área</h3>
+                    <div id="area-analysis"></div>
+                </div>
+                
+                 <div class="chart-container analysis-card">
+                    <h3>Análise por Tema</h3>
+                    <div id="tema-analysis"></div>
+                </div>
+
+                <div id="results-footer">
+                    <button id="review-answers-btn" class="btn btn-primary">Rever respostas e baixar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. TELA DE REVISÃO -->
+        <div id="review-screen" class="screen">
+            <div class="review-sticky-header">
+                <h2>Revisão do Simulado</h2>
+                <div class="header-buttons">
+                     <button onclick="showScreen('results-screen')" class="icon-btn review-back-btn">
+                        <span class="material-symbols-outlined">arrow_back</span>
+                     </button>
+                     <button class="icon-btn download-pdf-btn">
+                        <span class="material-symbols-outlined">download</span>
+                     </button>
+                </div>
+            </div>
+            <div id="review-content">
+                <!-- Conteúdo da revisão será gerado aqui -->
+            </div>
+            <div id="review-footer">
+                 <div class="header-buttons">
+                     <button onclick="showScreen('results-screen')" class="icon-btn review-back-btn">
+                        <span class="material-symbols-outlined">arrow_back</span>
+                     </button>
+                     <button class="icon-btn download-pdf-btn">
+                        <span class="material-symbols-outlined">download</span>
+                     </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // =================================================================
+        // ESTADO GLOBAL E VARIÁVEIS
+        // =================================================================
+        let allQuestions = [];
+        let userAnswers = [];
+        let currentUser = { name: '', email: '' };
+        let currentQuestionIndex = 0;
+        let quizStartTime;
+
+        const userMap = {
+            'AMIR': 'amirposternak@gmail.com',
+            'DYEGO': 'dyegoluiz.net@gmail.com',
+            'MENEZES': 'menezesf96@gmail.com',
+            'ZÉ PEDRO': 'luizpedrogomes.lpmg@gmail.com',
+            'FUINHA': 'pedrovitorsoares@hotmail.com',
+            'PESCADOR': 'victorhugobandeira2@gmail.com'
+        };
+
+
+        // =================================================================
+        // INICIALIZAÇÃO DO APLICATIVO
+        // =================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            populateNameDropdown();
+            google.script.run
+                .withSuccessHandler(onQuestionsLoaded)
+                .withFailureHandler(onQuestionsLoadError)
+                .getQuestions();
+        });
+
+        function onQuestionsLoaded(questions) {
+            if (questions.error) {
+                onQuestionsLoadError({message: questions.error});
+                return;
+            }
+            allQuestions = questions;
+            showScreen('welcome-screen');
+        }
+
+        function onQuestionsLoadError(error) {
+            const errorEl = document.getElementById('error-message');
+            errorEl.textContent = `Erro ao carregar: ${error.message}. Tente recarregar a página.`;
+            console.error(error);
+        }
+
+        function populateNameDropdown() {
+            const selectEl = document.getElementById('name');
+            Object.keys(userMap).forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                selectEl.appendChild(option);
+            });
+        }
+
+        // =================================================================
+        // GERENCIAMENTO DE TELAS E EVENTOS
+        // =================================================================
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function setupEventListeners() {
+            // Formulário de boas-vindas
+            document.getElementById('welcome-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                currentUser.name = document.getElementById('name').value;
+                currentUser.email = document.getElementById('email').value;
+                if(currentUser.name && currentUser.email) {
+                    showScreen('warning-screen');
+                }
+            });
+            
+            // Mapeamento de nome para email
+            document.getElementById('name').addEventListener('change', (e) => {
+                 const emailGroup = document.getElementById('email-group');
+                 const emailInput = document.getElementById('email');
+                 const selectedName = e.target.value;
+
+                 if (selectedName && userMap[selectedName]) {
+                     emailInput.value = userMap[selectedName];
+                     emailGroup.style.display = 'block';
+                 } else {
+                     emailInput.value = '';
+                     emailGroup.style.display = 'none';
+                 }
+            });
+
+            // Botão de início do quiz
+            document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
+            
+            // Botão de próxima questão
+            document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
+            
+            // Botão para rever respostas
+            document.getElementById('review-answers-btn').addEventListener('click', () => {
+                renderReviewScreen();
+                showScreen('review-screen');
+            });
+
+            // Botões para baixar PDF
+            document.querySelectorAll('.download-pdf-btn').forEach(button => {
+                 button.addEventListener('click', handleDownloadPdf);
+            });
+            
+            // Modal de imagem
+            document.querySelector('.modal-close').addEventListener('click', () => {
+                document.getElementById('image-modal').style.display = 'none';
+            });
+        }
+        
+        // =================================================================
+        // LÓGICA DO QUIZ
+        // =================================================================
+
+        function startQuiz() {
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            quizStartTime = new Date();
+            showScreen('quiz-screen');
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const question = allQuestions[currentQuestionIndex];
+            const card = document.getElementById('question-card');
+            
+            // Atualiza barra de progresso
+            const progress = ((currentQuestionIndex + 1) / allQuestions.length) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            document.getElementById('progress-text').textContent = `Questão ${currentQuestionIndex + 1} de ${allQuestions.length}`;
+
+            // Monta o HTML da questão
+            let imageHtml = question.Imagem ? `<img src="${question.Imagem}" alt="Imagem da questão" class="question-image" onclick="openImageModal('${question.Imagem}')">` : '';
+            let provaClass = question.Prova === 'BANCO PRÓPRIO' ? 'banco-proprio' : '';
+
+            card.innerHTML = `
+                <p class="question-header ${provaClass}">${question.Prova}</p>
+                <p class="question-enunciado">${question.Enunciado}</p>
+                ${imageHtml}
+                <div class="options-container">
+                    <button data-option="A"><span class="option-letter">A</span> <span class="option-text">${question.A}</span></button>
+                    <button data-option="B"><span class="option-letter">B</span> <span class="option-text">${question.B}</span></button>
+                    <button data-option="C"><span class="option-letter">C</span> <span class="option-text">${question.C}</span></button>
+                    <button data-option="D"><span class="option-letter">D</span> <span class="option-text">${question.D}</span></button>
+                </div>
+                <div class="feedback-section" style="display: none;">
+                    ${question.Comentários ? `
+                    <div class="accordion">
+                        <div class="accordion-header">
+                            <span>Comentário</span>
+                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m19.25 10-7.25 7.25-7.25-7.25"></path></svg>
+                        </div>
+                        <div class="accordion-content"><p>${question.Comentários}</p></div>
+                    </div>` : ''}
+                    ${question.Referência ? `
+                    <div class="accordion">
+                        <div class="accordion-header">
+                            <span>Referência</span>
+                             <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m19.25 10-7.25 7.25-7.25-7.25"></path></svg>
+                        </div>
+                        <div class="accordion-content"><p>${question.Referência}</p></div>
+                    </div>` : ''}
+                </div>
+            `;
+
+            // Adiciona event listeners para as opções e accordions
+            card.querySelectorAll('.options-container button').forEach(button => {
+                button.addEventListener('click', handleAnswer);
+            });
+            card.querySelectorAll('.accordion-header').forEach(header => {
+                header.addEventListener('click', () => header.parentElement.classList.toggle('active'));
+            });
+        }
+        
+        function handleAnswer(event) {
+            const selectedButton = event.currentTarget;
+            const selectedOption = selectedButton.dataset.option;
+            const question = allQuestions[currentQuestionIndex];
+
+            const isCorrect = selectedOption === question.Gabarito;
+
+            // Armazena a resposta do usuário
+            userAnswers.push({
+                questionId: question.id,
+                submittedAnswer: selectedOption,
+                isCorrect: isCorrect,
+                question: question // Armazena a questão inteira para análise posterior
+            });
+
+            // Desabilita todos os botões
+            const allOptionButtons = document.querySelectorAll('.options-container button');
+            allOptionButtons.forEach(btn => btn.disabled = true);
+            
+            // Aplica estilos de feedback visual
+            selectedButton.classList.add(isCorrect ? 'correct' : 'incorrect');
+            if (!isCorrect) {
+                const correctButton = document.querySelector(`.options-container button[data-option="${question.Gabarito}"]`);
+                if(correctButton) correctButton.classList.add('correct');
+            }
+            
+            // Mostra a seção de feedback (comentários/referências)
+            document.querySelector('.feedback-section').style.display = 'block';
+
+            // Mostra o botão de próxima questão / finalizar
+            const nextBtn = document.getElementById('next-question-btn');
+            nextBtn.style.display = 'block';
+            if (currentQuestionIndex === allQuestions.length - 1) {
+                nextBtn.textContent = 'Finalizar Simulado';
+            } else {
+                nextBtn.textContent = 'Próxima Questão';
+            }
+        }
+        
+        function nextQuestion() {
+            if (currentQuestionIndex < allQuestions.length - 1) {
+                currentQuestionIndex++;
+                renderQuestion();
+                document.getElementById('next-question-btn').style.display = 'none';
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function openImageModal(src) {
+            const modal = document.getElementById('image-modal');
+            document.getElementById('modal-img').src = src;
+            modal.style.display = 'flex';
+        }
+
+        function finishQuiz() {
+            showScreen('loading-screen');
+            document.querySelector('#loading-screen h2').textContent = 'Calculando e enviando resultados...';
+            
+            const score = calculateScore(userAnswers);
+            const provaId = `prova-${quizStartTime.getTime()}`;
+
+            const payload = {
+                user: currentUser,
+                answers: userAnswers.map(a => ({ questionId: a.questionId, submittedAnswer: a.submittedAnswer, isCorrect: a.isCorrect})), // Payload menor para o servidor
+                score: score,
+                provaId: provaId,
+            };
+
+            google.script.run
+                .withSuccessHandler(() => {
+                    renderResultsScreen();
+                    showScreen('results-screen');
+                })
+                .withFailureHandler((err) => {
+                    console.error('Falha ao enviar resultados:', err);
+                    alert('Houve um erro ao enviar seus resultados. Por favor, tente novamente.');
+                    showScreen('quiz-screen'); // Volta para a tela do quiz para não perder o progresso
+                })
+                .submitResults(JSON.stringify(payload));
+        }
+
+        // =================================================================
+        // LÓGICA DA TELA DE RESULTADOS
+        // =================================================================
+        function renderResultsScreen() {
+            const percentageScore = calculateScore(userAnswers);
+            const score10 = percentageScore / 10;
+            
+            const scoreEl = document.getElementById('final-score');
+            const messageEl = document.getElementById('results-message');
+            let scoreColor = '';
+            let message = '';
+
+            if (score10 < 5) {
+                scoreColor = 'var(--red-500)';
+                message = `Atenção, ${currentUser.name}! Seu rendimento está abaixo do esperado. É crucial focar nos estudos e revisar seus pontos fracos.`;
+            } else if (score10 < 7) {
+                scoreColor = 'var(--gold)';
+                message = `Dá pra passar, ${currentUser.name}, mas o ideal é melhorar!`;
+            } else {
+                scoreColor = 'var(--green-500)';
+                message = `Parabéns, ${currentUser.name}! Seu desempenho foi excelente! Continue nesse ritmo e a aprovação será certa!`;
+            }
+
+            scoreEl.textContent = score10.toFixed(1);
+            scoreEl.style.color = scoreColor;
+            messageEl.textContent = message;
+
+            // Análises
+            const provaDist = analyzeProvaDistribution(userAnswers);
+            const areaPerf = analyzePerformanceByArea(userAnswers);
+            const temaPerf = analyzePerformanceByTema(userAnswers);
+
+            // Renderiza gráficos
+            renderDonutChart(provaDist);
+            renderProgressBarAnalysis('area-analysis', areaPerf);
+            renderProgressBarAnalysis('tema-analysis', temaPerf);
+        }
+
+        function renderDonutChart(data) {
+            const chartEl = document.getElementById('donut-chart');
+            const legendEl = document.getElementById('donut-legend');
+            const totalEl = document.getElementById('donut-total');
+            
+            const colors = ['var(--cyan-500)', 'var(--gold)', '#475569', '#334155', '#ef4444', '#f97316'];
+            let gradientParts = [];
+            let currentPercentage = 0;
+            let legendHtml = '';
+            
+            const totalCount = Object.values(data).reduce((sum, item) => sum + item.count, 0);
+            totalEl.textContent = totalCount;
+
+            Object.entries(data).forEach(([key, value], index) => {
+                const percentage = totalCount > 0 ? (value.count / totalCount) * 100 : 0;
+                const color = colors[index % colors.length];
+                
+                gradientParts.push(`${color} ${currentPercentage}% ${currentPercentage + percentage}%`);
+                currentPercentage += percentage;
+
+                legendHtml += `
+                    <div class="legend-item">
+                        <div class="legend-label">
+                            <span class="legend-color" style="background-color: ${color};"></span>
+                            <span>${key}:</span>
+                        </div>
+                        <div class="legend-details">
+                            <span>${value.count} questões</span>
+                            <span>(${percentage.toFixed(0)}%)</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            chartEl.style.background = `conic-gradient(${gradientParts.join(', ')})`;
+            legendEl.innerHTML = legendHtml;
+        }
+
+        function renderProgressBarAnalysis(containerId, data) {
+            const container = document.getElementById(containerId);
+            let html = '';
+            
+            Object.entries(data).forEach(([key, value]) => {
+                const percentage = value.total > 0 ? (value.correct / value.total) * 100 : 0;
+                let barColor = '';
+                if (percentage < 50) {
+                    barColor = 'var(--red-500)';
+                } else if (percentage < 70) {
+                    barColor = 'var(--gold)';
+                } else {
+                    barColor = 'var(--green-500)';
+                }
+
+                html += `
+                <div class="progress-bar-analysis">
+                    <div class="progress-bar-analysis-label">
+                        <span>${key}</span>
+                        <span>${value.correct}/${value.total}</span>
+                    </div>
+                    <div class="progress-bar-container">
+                         <div class="progress-bar" style="width: ${percentage}%; background-color: ${barColor};">${percentage.toFixed(0)}%</div>
+                    </div>
+                </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+
+        // =================================================================
+        // LÓGICA DA TELA DE REVISÃO E PDF
+        // =================================================================
+        function renderReviewScreen() {
+            const container = document.getElementById('review-content');
+            container.innerHTML = ''; // Limpa conteúdo anterior
+
+            // --- Calcula dados para o cabeçalho ---
+            const percentageScore = calculateScore(userAnswers);
+            const score10 = percentageScore / 10;
+            let scoreColor = '';
+            if (score10 < 5) scoreColor = 'var(--red-500)';
+            else if (score10 < 7) scoreColor = 'var(--gold)';
+            else scoreColor = 'var(--green-500)';
+
+            const areas = [...new Set(userAnswers.map(a => a.question.Área))].join(', ');
+            const areaPerf = analyzePerformanceByArea(userAnswers);
+            const temaPerf = analyzePerformanceByTema(userAnswers);
+
+            // --- Cria o card de informações ---
+            const infoCardHtml = `
+                <div class="review-info-card">
+                    <p><strong>Nome:</strong> <span>${currentUser.name}</span></p>
+                    <p><strong>Data:</strong> <span>${quizStartTime.toLocaleDateString('pt-BR')}</span></p>
+                    <p><strong>Nota:</strong> <span class="score" style="color: ${scoreColor};">${score10.toFixed(1)}</span></p>
+                    <p><strong>Áreas:</strong> <span>${areas}</span></p>
+                </div>
+            `;
+            container.innerHTML += infoCardHtml;
+
+            // --- Cria os cards de análise ---
+            const analysisCardsHtml = `
+                <div class="chart-container analysis-card">
+                    <h3>Análise por Área</h3>
+                    <div id="review-area-analysis"></div>
+                </div>
+                <div class="chart-container analysis-card">
+                    <h3>Análise por Tema</h3>
+                    <div id="review-tema-analysis"></div>
+                </div>
+            `;
+            container.innerHTML += analysisCardsHtml;
+
+            // Popula os gráficos de análise
+            renderProgressBarAnalysis('review-area-analysis', areaPerf);
+            renderProgressBarAnalysis('review-tema-analysis', temaPerf);
+            
+            // --- Renderiza cada questão ---
+            userAnswers.forEach((answer, index) => {
+                const question = answer.question;
+                const card = document.createElement('div');
+                card.className = 'review-question-card';
+                
+                let imageHtml = question.Imagem ? `<img src="${question.Imagem}" alt="Imagem da questão" class="question-image" onclick="openImageModal('${question.Imagem}')">` : '';
+                let provaClass = question.Prova === 'BANCO PRÓPRIO' ? 'banco-proprio' : '';
+
+                card.innerHTML = `
+                    <p><b>Questão ${index + 1}</b></p>
+                    <p class="question-header ${provaClass}">${question.Prova}</p>
+                    <p class="question-enunciado">${question.Enunciado}</p>
+                    ${imageHtml}
+                    <div class="options-container">
+                        <button data-option="A" disabled><span class="option-letter">A</span> <span class="option-text">${question.A}</span></button>
+                        <button data-option="B" disabled><span class="option-letter">B</span> <span class="option-text">${question.B}</span></button>
+                        <button data-option="C" disabled><span class="option-letter">C</span> <span class="option-text">${question.C}</span></button>
+                        <button data-option="D" disabled><span class="option-letter">D</span> <span class="option-text">${question.D}</span></button>
+                    </div>
+                `;
+
+                // Aplica estilos de feedback
+                const correctButton = card.querySelector(`button[data-option="${question.Gabarito}"]`);
+                const selectedButton = card.querySelector(`button[data-option="${answer.submittedAnswer}"]`);
+
+                if (correctButton) correctButton.classList.add('correct');
+                if (selectedButton && !answer.isCorrect) {
+                    selectedButton.classList.add('incorrect');
+                }
+                
+                container.appendChild(card);
+            });
+        }
+
+        function handleDownloadPdf(event) {
+            const { jsPDF } = window.jspdf;
+            const reviewContent = document.getElementById('review-content');
+            const clickedBtn = event.currentTarget;
+            const initialContent = new Map();
+            const allDownloadBtns = document.querySelectorAll('.download-pdf-btn');
+
+            allDownloadBtns.forEach(btn => {
+                initialContent.set(btn, btn.innerHTML);
+                btn.innerHTML = '<div class="spinner" style="width: 24px; height: 24px; border-width: 3px; margin: auto;"></div>';
+                btn.disabled = true;
+            });
+            
+
+            html2canvas(reviewContent, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--slate-800').trim(),
+                windowWidth: reviewContent.scrollWidth,
+                windowHeight: reviewContent.scrollHeight
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/jpeg', 0.8); // Compressão para JPEG
+                const pdf = new jsPDF({
+                    orientation: 'p',
+                    unit: 'mm',
+                    format: 'a4',
+                    compress: true
+                });
+
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const imgProps = pdf.getImageProperties(imgData);
+                const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                
+                let heightLeft = imgHeight;
+                let position = 0;
+                
+                pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight, undefined, 'FAST');
+                heightLeft -= pdfHeight;
+
+                while (heightLeft > 0) {
+                    position = - (imgHeight - heightLeft);
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight, undefined, 'FAST');
+                    heightLeft -= pdfHeight;
+                }
+
+                pdf.save(`revisao-simulado-${currentUser.name.replace(/\s/g, '_')}.pdf`);
+                
+                allDownloadBtns.forEach(btn => {
+                    btn.innerHTML = initialContent.get(btn);
+                    btn.disabled = false;
+                });
+
+            }).catch(err => {
+                 console.error("Erro ao gerar PDF:", err);
+                 alert("Não foi possível gerar o PDF.");
+                 allDownloadBtns.forEach(btn => {
+                    btn.innerHTML = initialContent.get(btn);
+                    btn.disabled = false;
+                });
+            });
+        }
+
+        // =================================================================
+        // FUNÇÕES DE CÁLCULO E ANÁLISE (Portadas do React)
+        // =================================================================
+        function calculateScore(answers) {
+            if (!answers.length) return 0;
+            const correctAnswers = answers.filter(a => a.isCorrect).length;
+            return (correctAnswers / answers.length) * 100;
+        }
+
+        function analyzeProvaDistribution(answers) {
+            return answers.reduce((acc, curr) => {
+                const prova = curr.question.Prova || 'N/A';
+                if (!acc[prova]) {
+                    acc[prova] = { count: 0 };
+                }
+                acc[prova].count++;
+                return acc;
+            }, {});
+        }
+        
+        function analyzePerformanceByArea(answers) {
+            return answers.reduce((acc, curr) => {
+                const area = curr.question.Área || 'N/A';
+                if (!acc[area]) {
+                    acc[area] = { correct: 0, total: 0 };
+                }
+                if (curr.isCorrect) {
+                    acc[area].correct++;
+                }
+                acc[area].total++;
+                return acc;
+            }, {});
+        }
+
+        function analyzePerformanceByTema(answers) {
+            return answers.reduce((acc, curr) => {
+                const tema = curr.question.Tema || 'N/A';
+                 if (!acc[tema]) {
+                    acc[tema] = { correct: 0, total: 0 };
+                }
+                if (curr.isCorrect) {
+                    acc[tema].correct++;
+                }
+                acc[tema].total++;
+                return acc;
+            }, {});
+        }
+
+    </script>
+</body>
+</html>
+
